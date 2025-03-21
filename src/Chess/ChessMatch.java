@@ -15,6 +15,7 @@ public class ChessMatch {
 	private int turns;
 	private Color currentPlayer;
 	private boolean check;
+	private boolean checkMate;
 
 	private List<Piece> piecesOnTheBoard = new ArrayList<>();
 	private List<Piece> capturedPieces = new ArrayList<>();
@@ -25,6 +26,11 @@ public class ChessMatch {
 		currentPlayer = Color.WHITE;
 		initialSetup();
 	}
+
+	public boolean getCheckMate() {
+		return checkMate;
+	}
+
 	public boolean getCheck() {
 		return check;
 	}
@@ -54,12 +60,17 @@ public class ChessMatch {
 		validateTargetPosition(source, target);
 		Piece capturedPiece = makeMove(source, target);
 		if (testCheck(currentPlayer)) {
- 			undoMove(source, target, capturedPiece);
- 			throw new ChessException("You can't put yourself in check");
- 		}
- 		
- 		check = (testCheck(opponent(currentPlayer))) ? true : false;
-		nextTurn();
+			undoMove(source, target, capturedPiece);
+			throw new ChessException("You can't put yourself in check");
+		}
+
+		check = (testCheck(opponent(currentPlayer))) ? true : false;
+		if (testCheckMate(opponent(currentPlayer))) {
+			checkMate = true;
+		} else {
+
+			nextTurn();
+		}
 		return (ChessPiece) capturedPiece;
 
 	}
@@ -121,6 +132,35 @@ public class ChessMatch {
 		return false;
 	}
 
+	private boolean testCheckMate(Color color) {
+		if (!testCheck(color)) {
+			return false;
+		}
+		List<Piece> list = piecesOnTheBoard.stream().filter(x -> ((ChessPiece) x).getColor() == color)
+				.collect(Collectors.toList());
+		for (Piece p : list) {
+			boolean[][] mat = p.posibleMoves();
+			for (int i = 0; i < board.getRows(); i++) {
+				for (int j = 0; j < board.getColumns(); j++) {
+					if (mat[i][j]) {
+						Position source = ((ChessPiece) p).getChessPosition().toPosition();
+						Position target = new Position(i, j);
+						Piece capturedPiece = makeMove(source, target);
+						boolean testCheck = testCheck(color);
+						undoMove(source, target, capturedPiece);
+						if (!testCheck) {
+							return false;
+						}
+
+					}
+				}
+
+			}
+
+		}
+		return true;
+	}
+
 	private void validateSourcePosition(Position position) {
 		if (!board.thereIsAPiece(position)) {
 			throw new ChessException("There is no piece on source position");
@@ -151,19 +191,12 @@ public class ChessMatch {
 	}
 
 	private void initialSetup() {
-		placeNewPiece('c', 1, new Rook(board, Color.WHITE));
-		placeNewPiece('c', 2, new Rook(board, Color.WHITE));
-		placeNewPiece('d', 2, new Rook(board, Color.WHITE));
-		placeNewPiece('e', 2, new Rook(board, Color.WHITE));
-		placeNewPiece('e', 1, new Rook(board, Color.WHITE));
-		placeNewPiece('d', 1, new King(board, Color.WHITE));
+		placeNewPiece('h', 7, new Rook(board, Color.WHITE));
+		placeNewPiece('d', 1, new Rook(board, Color.WHITE));
+		placeNewPiece('e', 1, new King(board, Color.WHITE));
 
-		placeNewPiece('c', 7, new Rook(board, Color.BLACK));
-		placeNewPiece('c', 8, new Rook(board, Color.BLACK));
-		placeNewPiece('d', 7, new Rook(board, Color.BLACK));
-		placeNewPiece('e', 7, new Rook(board, Color.BLACK));
-		placeNewPiece('e', 8, new Rook(board, Color.BLACK));
-		placeNewPiece('d', 8, new King(board, Color.BLACK));
+		placeNewPiece('b', 8, new Rook(board, Color.BLACK));
+		placeNewPiece('a', 8, new King(board, Color.BLACK));
 	}
 
 }
